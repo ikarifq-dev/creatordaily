@@ -750,7 +750,10 @@
   <!-- Notes & Ideas -->
   <section id="sec-notes">
     <div class="card">
-      <div class="card-title">💬 Catatan & Ide Hari Ini</div>
+      <div class="card-title">
+        💬 Catatan & Ide Hari Ini
+        <button onclick="copyNotes()" id="copyNotesBtn" style="margin-left:auto;background:#ffd1e4;color:#be185d;border:none;border-radius:10px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;transition:background .15s" onmouseover="this.style.background='#ec4899';this.style.color='white'" onmouseout="this.style.background='#ffd1e4';this.style.color='#be185d'">📋 Copy</button>
+      </div>
       <textarea class="notes-area" id="dailyNotes" placeholder="Tulis ide, refleksi, hal yang mau dikerjakan, atau apapun..."></textarea>
     </div>
   </section>
@@ -810,6 +813,7 @@ const PLATFORMS=[
   {name:"Lemon8",    icon:"🍋"},
   {name:"Facebook",  icon:"👤"},
   {name:"Pinterest", icon:"📌"},
+  {name:"Telegram",  icon:"✈️"},
   {name:"Lainnya",   icon:"➕"},
 ];
 const STATUSES=["Ide","Draft","Dijadwalkan","Diposting","Selesai"];
@@ -1174,12 +1178,12 @@ function renderContentCards(plans){
 // ── LINK KONTEN ──
 const PLAT_ICONS={
   "Threads":"🧵","Instagram":"📸","TikTok":"🎵","Lemon8":"🍋",
-  "Facebook":"👤","Pinterest":"📌","Lainnya":"➕",""  :"🌐"
+  "Facebook":"👤","Pinterest":"📌","Telegram":"✈️","Lainnya":"➕",""  :"🌐"
 };
 
 // Populate link platform select
 const linkPlatSel=document.getElementById("linkPlat");
-["","Threads","Instagram","TikTok","Lemon8","Facebook","Pinterest","Lainnya"].forEach(p=>{
+["","Threads","Instagram","TikTok","Lemon8","Facebook","Pinterest","Telegram","Lainnya"].forEach(p=>{
   const o=document.createElement("option");o.value=p;o.textContent=p||"— Platform —";linkPlatSel.appendChild(o);
 });
 
@@ -1486,6 +1490,28 @@ function pickDay(dateStr){
 }
 
 
+
+function copyNotes(){
+  const val = document.getElementById("dailyNotes").value.trim();
+  if(!val){ showToast("Catatan masih kosong"); return; }
+  navigator.clipboard.writeText(val);
+  const btn = document.getElementById("copyNotesBtn");
+  btn.textContent = "✓ Tersalin!";
+  setTimeout(()=>{ btn.innerHTML = "📋 Copy"; }, 1500);
+  showToast("Catatan berhasil dicopy 📋");
+}
+
+// Migrasi — bersihkan platform lama dari data tersimpan
+const VALID_PLATFORMS = ["Threads","Instagram","TikTok","Lemon8","Facebook","Pinterest","Telegram","Lainnya"];
+Object.keys(allData).forEach(ds => {
+  const rec = allData[ds];
+  if(rec && rec.contentPlans){
+    rec.contentPlans.forEach(p => {
+      if(p.platforms) p.platforms = p.platforms.filter(pl => VALID_PLATFORMS.includes(pl));
+    });
+  }
+});
+localStorage.setItem("creatorDailyV1", JSON.stringify(allData));
 
 // Init — hapus semua record kosong yang tersimpan
 Object.keys(allData).forEach(ds => {
