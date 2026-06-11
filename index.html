@@ -1,0 +1,1538 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Creator Daily Dashboard</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{
+      font-family:'Segoe UI',Arial,sans-serif;
+      background:linear-gradient(135deg,#fff0f8,#f5f0ff);
+      min-height:100vh;
+      color:#333;
+    }
+
+    /* ── TOP BAR ── */
+    .topbar{
+      position:fixed;top:0;left:0;right:0;
+      height:56px;
+      background:white;
+      border-bottom:1px solid #ffd1e4;
+      display:flex;align-items:center;
+      padding:0 16px 0 68px;
+      z-index:100;
+      box-shadow:0 2px 12px rgba(236,72,153,.08);
+    }
+    .topbar-date{
+      font-size:14px;font-weight:700;color:#be185d;
+    }
+    .topbar-day{
+      font-size:12px;color:#aaa;margin-left:8px;
+    }
+    .topbar-save{
+      margin-left:auto;
+      background:#ec4899;
+      color:white;
+      border:none;
+      border-radius:10px;
+      padding:7px 16px;
+      font-size:13px;
+      font-weight:700;
+      cursor:pointer;
+    }
+    .topbar-save:hover{background:#be185d}
+
+    /* ── HAMBURGER ── */
+    .hamburger{
+      position:fixed;top:7px;left:10px;z-index:200;
+      width:42px;height:42px;
+      background:#ec4899;
+      border-radius:12px;border:none;cursor:pointer;
+      display:flex;flex-direction:column;
+      justify-content:center;align-items:center;gap:5px;
+      box-shadow:0 4px 14px rgba(236,72,153,.35);
+      transition:background .2s;
+    }
+    .hamburger:hover{background:#be185d}
+    .hamburger span{
+      display:block;width:20px;height:2px;
+      background:white;border-radius:2px;
+      transition:transform .3s,opacity .3s;
+    }
+    .hamburger.open span:nth-child(1){transform:translateY(7px) rotate(45deg)}
+    .hamburger.open span:nth-child(2){opacity:0}
+    .hamburger.open span:nth-child(3){transform:translateY(-7px) rotate(-45deg)}
+
+    /* ── SIDEBAR ── */
+    .sidebar-overlay{
+      position:fixed;inset:0;background:rgba(0,0,0,.25);
+      z-index:150;opacity:0;pointer-events:none;transition:opacity .25s;
+    }
+    .sidebar-overlay.visible{opacity:1;pointer-events:all}
+    .sidebar{
+      position:fixed;top:0;left:0;height:100%;width:260px;
+      background:white;z-index:160;
+      box-shadow:4px 0 30px rgba(160,80,130,.18);
+      transform:translateX(-100%);
+      transition:transform .28s cubic-bezier(.4,0,.2,1);
+      display:flex;flex-direction:column;overflow:hidden;
+    }
+    .sidebar.open{transform:translateX(0)}
+    .sidebar-header{
+      background:linear-gradient(135deg,#ec4899,#be185d);
+      padding:24px 20px 20px;color:white;
+    }
+    .sidebar-header h2{margin:0 0 4px;font-size:16px;font-weight:700}
+    .sidebar-header p{margin:0;font-size:12px;opacity:.85}
+    .sidebar-nav{flex:1;padding:12px 10px;overflow-y:auto}
+    .nav-label{
+      font-size:10px;font-weight:700;text-transform:uppercase;
+      letter-spacing:.08em;color:#be185d;padding:10px 10px 4px;
+    }
+    .nav-item{
+      display:flex;align-items:center;gap:10px;
+      padding:10px 12px;border-radius:12px;cursor:pointer;
+      font-size:13.5px;color:#555;
+      transition:background .15s,color .15s;
+      border:none;background:none;width:100%;text-align:left;
+    }
+    .nav-item:hover{background:#fff0f6;color:#be185d}
+    .nav-item .nav-icon{font-size:16px;width:22px;text-align:center}
+    .nav-item .nav-text{font-weight:500}
+    .nav-item.danger{color:#e11d48}
+    .sidebar-footer{
+      padding:14px 16px;border-top:1px solid #ffd1e4;
+      font-size:12px;color:#aaa;text-align:center;
+    }
+
+    /* ── MAIN ── */
+    .main{
+      padding:72px 18px 32px;
+      max-width:900px;margin:auto;
+    }
+
+    /* ── DATE NAV ── */
+
+
+    /* ── SECTIONS ── */
+    section{margin-bottom:18px}
+    .card{
+      background:white;
+      border:1px solid #ffd1e4;
+      border-radius:20px;
+      padding:18px;
+      box-shadow:0 4px 16px rgba(236,72,153,.06);
+    }
+    .card-title{
+      font-size:14px;font-weight:700;color:#be185d;
+      margin-bottom:12px;display:flex;align-items:center;gap:6px;
+    }
+
+    /* ── CONTENT PLAN ── */
+    .content-grid{
+      display:grid;grid-template-columns:1fr 1fr;gap:10px;
+    }
+    .content-grid input,.content-grid select{
+      width:100%;padding:10px 12px;
+      border:1.5px solid #ffd1e4;border-radius:12px;
+      font-size:13px;outline:none;background:#fafafa;
+      color:#333;
+    }
+    .content-grid input:focus,.content-grid select:focus{
+      border-color:#ec4899;background:white;
+    }
+    .full-row{grid-column:1/-1}
+    .full-row textarea{
+      width:100%;padding:10px 12px;
+      border:1.5px solid #ffd1e4;border-radius:12px;
+      font-size:13px;outline:none;background:#fafafa;
+      resize:vertical;min-height:80px;color:#333;
+    }
+    .full-row textarea:focus{border-color:#ec4899;background:white}
+    .copy-btn{
+      margin-top:10px;
+      background:#ec4899;color:white;
+      border:none;border-radius:12px;
+      padding:9px 18px;font-size:13px;font-weight:700;
+      cursor:pointer;width:100%;
+    }
+    .copy-btn:hover{background:#be185d}
+
+    /* ── PLATFORM CHECKBOXES ── */
+    .platform-grid{
+      display:grid;
+      grid-template-columns:repeat(auto-fill,minmax(110px,1fr));
+      gap:8px;
+      margin-bottom:2px;
+    }
+    .plat-chip{
+      display:flex;align-items:center;gap:7px;
+      padding:8px 10px;
+      border:1.5px solid #ffd1e4;
+      border-radius:12px;
+      background:#fafafa;
+      cursor:pointer;
+      transition:all .15s;
+      user-select:none;
+    }
+    .plat-chip:hover{background:#fff0f6;border-color:#f9a8d4}
+    .plat-chip.checked{
+      background:#fff0f6;
+      border-color:#ec4899;
+    }
+    .plat-chip input[type="checkbox"]{display:none}
+    .plat-chip .plat-icon{font-size:16px;line-height:1;flex-shrink:0}
+    .plat-chip .plat-name{font-size:12px;font-weight:600;color:#555;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .plat-chip.checked .plat-name{color:#be185d}
+    .plat-chip .plat-check{
+      margin-left:auto;
+      width:16px;height:16px;
+      border-radius:50%;
+      background:#ffd1e4;
+      display:flex;align-items:center;justify-content:center;
+      font-size:10px;flex-shrink:0;
+      transition:background .15s;
+    }
+    .plat-chip.checked .plat-check{background:#ec4899;color:white}
+
+    /* ── CHECKLIST ── */
+    .checklist-item{
+      display:flex;align-items:center;gap:10px;
+      padding:9px 10px;background:#fff0f6;
+      border-radius:12px;margin-bottom:8px;
+    }
+    .checklist-item input[type="checkbox"]{
+      width:18px;height:18px;cursor:pointer;accent-color:#ec4899;flex-shrink:0;
+    }
+    .checklist-item input[type="text"]{
+      flex:1;border:none;background:transparent;
+      font-size:13px;color:#333;outline:none;padding:0;
+    }
+    .checklist-item.done-item input[type="text"]{
+      text-decoration:line-through;color:#bbb;
+    }
+    .checklist-item .del-btn{
+      border:none;background:none;color:#f9a8d4;
+      font-size:18px;cursor:pointer;line-height:1;padding:0 2px;
+    }
+    .checklist-item .del-btn:hover{color:#be185d}
+    .add-check-btn{
+      border:2px dashed #ffd1e4;background:none;color:#be185d;
+      border-radius:12px;padding:8px;width:100%;
+      font-size:13px;cursor:pointer;margin-top:4px;
+    }
+    .add-check-btn:hover{background:#fff0f6}
+
+    /* ── NOTES ── */
+    .notes-area{
+      width:100%;padding:12px;
+      border:1.5px solid #ffd1e4;border-radius:14px;
+      font-size:13px;outline:none;background:#fafafa;
+      resize:vertical;min-height:100px;color:#333;
+      font-family:inherit;
+    }
+    .notes-area:focus{border-color:#ec4899;background:white}
+
+    /* ── GOALS (read-only summary) ── */
+    .goals-textarea{
+      width:100%;padding:10px 12px;
+      border:1.5px solid #ffd1e4;border-radius:12px;
+      font-size:13px;outline:none;background:#fafafa;
+      resize:vertical;min-height:60px;color:#333;
+      font-family:inherit;
+    }
+    .goals-textarea:focus{border-color:#ec4899;background:white}
+
+    /* ── MOOD TRACKER ── */
+    .mood-row{display:flex;gap:10px;flex-wrap:wrap}
+    .mood-btn{
+      border:2px solid #ffd1e4;background:white;
+      border-radius:12px;padding:8px 14px;
+      font-size:20px;cursor:pointer;transition:all .15s;
+    }
+    .mood-btn:hover{background:#fff0f6;border-color:#ec4899}
+    .mood-btn.selected{background:#ec4899;border-color:#ec4899}
+
+    /* ── STATS BAR ── */
+    .stats-row{
+      display:grid;grid-template-columns:repeat(3,1fr);gap:10px;
+      margin-bottom:18px;
+    }
+    .stat-card{
+      background:white;border:1px solid #ffd1e4;
+      border-radius:16px;padding:14px 16px;text-align:center;
+      box-shadow:0 2px 10px rgba(236,72,153,.05);
+    }
+    .stat-num{font-size:24px;font-weight:800;color:#ec4899}
+    .stat-label{font-size:11px;color:#aaa;margin-top:2px}
+
+    /* ── TOAST ── */
+    .toast{
+      position:fixed;bottom:18px;left:50%;transform:translateX(-50%);
+      background:#be185d;color:white;
+      padding:12px 20px;border-radius:999px;
+      display:none;box-shadow:0 8px 20px rgba(0,0,0,.18);
+      z-index:999;font-size:13px;white-space:nowrap;
+    }
+
+    @media(max-width:560px){
+      .content-grid{grid-template-columns:1fr}
+      .stats-row{grid-template-columns:1fr 1fr}
+    }
+
+    /* ── LINK KONTEN ── */
+    .link-add-row{
+      display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;
+    }
+    .link-add-row input{
+      flex:1;min-width:140px;padding:9px 12px;
+      border:1.5px solid #ffd1e4;border-radius:12px;
+      font-size:13px;outline:none;background:#fafafa;color:#333;
+    }
+    .link-add-row input:focus{border-color:#ec4899;background:white}
+    .link-add-row select{
+      padding:9px 10px;border:1.5px solid #ffd1e4;border-radius:12px;
+      font-size:13px;outline:none;background:#fafafa;color:#333;cursor:pointer;
+    }
+    .link-add-row select:focus{border-color:#ec4899}
+    .link-add-btn{
+      background:#ec4899;color:white;border:none;
+      border-radius:12px;padding:9px 16px;
+      font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;
+    }
+    .link-add-btn:hover{background:#be185d}
+    .link-list{display:flex;flex-direction:column;gap:8px}
+    .link-item{
+      display:flex;align-items:center;gap:8px;
+      background:#fff0f6;border:1px solid #ffd1e4;
+      border-radius:14px;padding:10px 12px;
+    }
+    .link-icon{font-size:18px;flex-shrink:0}
+    .link-body{flex:1;min-width:0}
+    .link-label{font-size:13px;font-weight:700;color:#be185d;
+      white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .link-url{
+      font-size:11px;color:#aaa;
+      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+      margin-top:1px;
+    }
+    .link-actions{display:flex;gap:6px;flex-shrink:0}
+    .link-open-btn{
+      background:#ec4899;color:white;border:none;
+      border-radius:9px;padding:6px 12px;
+      font-size:12px;font-weight:700;cursor:pointer;
+      text-decoration:none;display:inline-flex;align-items:center;gap:4px;
+    }
+    .link-open-btn:hover{background:#be185d}
+    .link-copy-btn{
+      background:#ffd1e4;color:#be185d;border:none;
+      border-radius:9px;padding:6px 10px;
+      font-size:12px;cursor:pointer;
+    }
+    .link-copy-btn:hover{background:#f9a8d4}
+    .link-del-btn{
+      background:none;border:none;color:#f9a8d4;
+      font-size:18px;cursor:pointer;padding:0 2px;line-height:1;
+    }
+    .link-del-btn:hover{color:#be185d}
+    .link-empty{
+      text-align:center;color:#ddd;font-size:13px;padding:16px 0;
+    }
+
+    /* ── MULTI CONTENT PLAN ── */
+    .content-cards{ display:flex;flex-direction:column;gap:12px }
+    .content-card{
+      border:1.5px solid #ffd1e4;border-radius:16px;
+      background:#fafafa;overflow:hidden;
+    }
+    .content-card-header{
+      display:flex;align-items:center;gap:8px;
+      padding:10px 14px;background:#fff0f6;
+      border-bottom:1px solid #ffd1e4;cursor:pointer;
+      user-select:none;
+    }
+    .content-card-header .cc-num{
+      background:#ec4899;color:white;border-radius:8px;
+      width:24px;height:24px;display:flex;align-items:center;
+      justify-content:center;font-size:12px;font-weight:800;flex-shrink:0;
+    }
+    .content-card-header .cc-preview{
+      flex:1;font-size:13px;font-weight:600;color:#555;
+      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    }
+    .content-card-header .cc-status-badge{
+      font-size:11px;font-weight:700;padding:3px 8px;
+      border-radius:8px;background:#ffd1e4;color:#be185d;flex-shrink:0;
+    }
+    .content-card-header .cc-toggle{
+      font-size:12px;color:#be185d;flex-shrink:0;transition:transform .2s;
+    }
+    .content-card-header .cc-del{
+      border:none;background:none;color:#f9a8d4;
+      font-size:18px;cursor:pointer;padding:0;line-height:1;flex-shrink:0;
+    }
+    .content-card-header .cc-del:hover{color:#be185d}
+    .content-card-body{
+      padding:14px;display:flex;flex-direction:column;gap:10px;
+    }
+    .content-card-body.collapsed{display:none}
+    .cc-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .cc-row input,.cc-row select{
+      width:100%;padding:9px 11px;
+      border:1.5px solid #ffd1e4;border-radius:11px;
+      font-size:13px;outline:none;background:white;color:#333;
+    }
+    .cc-row input:focus,.cc-row select:focus{border-color:#ec4899}
+    .cc-full input,.cc-full textarea{
+      width:100%;padding:9px 11px;
+      border:1.5px solid #ffd1e4;border-radius:11px;
+      font-size:13px;outline:none;background:white;color:#333;
+      font-family:inherit;
+    }
+    .cc-full textarea{resize:vertical;min-height:70px}
+    .cc-full input:focus,.cc-full textarea:focus{border-color:#ec4899}
+    .cc-drive-row{
+      display:flex;align-items:center;gap:8px;
+    }
+    .cc-drive-row input{
+      flex:1;padding:9px 11px;
+      border:1.5px solid #ffd1e4;border-radius:11px;
+      font-size:13px;outline:none;background:white;color:#333;
+    }
+    .cc-drive-row input:focus{border-color:#ec4899}
+    .cc-drive-btn{
+      background:#4285F4;color:white;border:none;
+      border-radius:11px;padding:9px 14px;
+      font-size:13px;font-weight:700;cursor:pointer;
+      white-space:nowrap;text-decoration:none;
+      display:inline-flex;align-items:center;gap:5px;
+      flex-shrink:0;
+    }
+    .cc-drive-btn:hover{background:#3367d6}
+    .cc-drive-btn.disabled{background:#ccc;pointer-events:none}
+    .cc-plat-grid{
+      display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:6px;
+    }
+    .add-content-btn{
+      border:2px dashed #ffd1e4;background:none;color:#be185d;
+      border-radius:14px;padding:11px;width:100%;
+      font-size:13px;font-weight:700;cursor:pointer;margin-top:4px;
+    }
+    .add-content-btn:hover{background:#fff0f6}
+    .content-count-badge{
+      background:#ffd1e4;color:#be185d;border-radius:20px;
+      padding:2px 10px;font-size:12px;font-weight:700;margin-left:auto;
+    }
+
+    /* ── IMPORT / EXPORT MODAL ── */
+    .modal-overlay{
+      position:fixed;inset:0;background:rgba(0,0,0,.35);
+      z-index:300;display:flex;align-items:center;justify-content:center;
+      opacity:0;pointer-events:none;transition:opacity .2s;
+    }
+    .modal-overlay.show{opacity:1;pointer-events:all}
+    .modal{
+      background:white;border-radius:24px;padding:24px;
+      width:min(92vw,440px);
+      box-shadow:0 20px 60px rgba(0,0,0,.2);
+      transform:translateY(16px);transition:transform .2s;
+    }
+    .modal-overlay.show .modal{transform:translateY(0)}
+    .modal-title{
+      font-size:16px;font-weight:800;color:#be185d;
+      margin-bottom:16px;display:flex;align-items:center;gap:8px;
+    }
+    .modal-close{
+      margin-left:auto;border:none;background:none;
+      font-size:20px;color:#ccc;cursor:pointer;line-height:1;
+    }
+    .modal-close:hover{color:#be185d}
+    .io-section{margin-bottom:18px}
+    .io-label{font-size:12px;font-weight:700;color:#555;margin-bottom:8px}
+    .io-row{display:flex;gap:8px;flex-wrap:wrap}
+    .io-btn{
+      flex:1;min-width:110px;
+      border:none;border-radius:12px;
+      padding:11px 14px;font-size:13px;font-weight:700;
+      cursor:pointer;display:flex;align-items:center;
+      justify-content:center;gap:6px;
+    }
+    .io-btn.export-json{background:#10b981;color:white}
+    .io-btn.export-json:hover{background:#059669}
+    .io-btn.export-csv{background:#3b82f6;color:white}
+    .io-btn.export-csv:hover{background:#2563eb}
+    .io-btn.import-btn{background:#f59e0b;color:white}
+    .io-btn.import-btn:hover{background:#d97706}
+    .io-btn.export-day{background:#ec4899;color:white}
+    .io-btn.export-day:hover{background:#be185d}
+    .io-divider{border:none;border-top:1px solid #ffd1e4;margin:16px 0}
+    .io-note{font-size:11px;color:#aaa;margin-top:8px;line-height:1.5}
+    .io-scope{
+      display:flex;gap:6px;margin-bottom:10px;
+    }
+    .io-scope button{
+      flex:1;padding:7px;border-radius:10px;border:1.5px solid #ffd1e4;
+      background:white;color:#888;font-size:12px;font-weight:700;cursor:pointer;
+    }
+    .io-scope button.active{background:#fff0f6;border-color:#ec4899;color:#be185d}
+
+    /* ── DATE NAV OVERRIDE ── */
+    .date-nav{
+      display:grid;
+      grid-template-columns:44px 1fr 44px;
+      align-items:center;
+      gap:8px;
+      margin-bottom:18px;
+    }
+    .date-nav .nav-arrow{
+      width:44px;height:44px;border-radius:14px;
+      border:none;background:#ffd1e4;color:#be185d;
+      font-size:22px;font-weight:900;cursor:pointer;
+      display:flex;align-items:center;justify-content:center;
+      flex-shrink:0;transition:background .15s,color .15s;
+      line-height:1;
+    }
+    .date-nav .nav-arrow:hover{background:#ec4899;color:white}
+
+    /* ── MINI CALENDAR ── */
+    .cal-wrapper{position:relative;width:100%}
+    .cal-trigger{
+      width:100%;
+      display:flex;align-items:center;justify-content:space-between;
+      gap:8px;padding:11px 16px;
+      border:1.5px solid #ffd1e4;border-radius:14px;
+      background:white;cursor:pointer;
+      font-size:14px;font-weight:700;color:#be185d;
+      transition:border-color .15s,background .15s;
+      box-shadow:0 2px 8px rgba(236,72,153,.06);
+    }
+    .cal-trigger:hover{border-color:#ec4899;background:#fff8fb}
+    .cal-trigger .ct-left{display:flex;align-items:center;gap:8px}
+    .cal-trigger .ct-icon{font-size:16px}
+    .cal-trigger .ct-date{font-size:14px;font-weight:800;color:#be185d}
+    .cal-trigger .ct-day{font-size:12px;color:#f9a8d4;font-weight:600}
+    .cal-trigger .ct-arrow{font-size:11px;color:#f9a8d4;transition:transform .2s}
+    .cal-trigger.open .ct-arrow{transform:rotate(180deg)}
+
+    .mini-cal{
+      position:fixed;
+      top:50%;left:50%;
+      transform:translate(-50%,-50%) scale(.95);
+      z-index:300;
+      background:white;border-radius:24px;
+      box-shadow:0 20px 60px rgba(190,24,93,.22);
+      border:1.5px solid #ffd1e4;
+      width:min(340px,92vw);
+      padding:20px;
+      opacity:0;pointer-events:none;
+      transition:opacity .18s,transform .18s;
+    }
+    .mini-cal.open{
+      opacity:1;pointer-events:all;
+      transform:translate(-50%,-50%) scale(1);
+    }
+    .cal-overlay{
+      position:fixed;inset:0;z-index:299;
+      background:rgba(0,0,0,.15);
+      opacity:0;pointer-events:none;transition:opacity .18s;
+    }
+    .cal-overlay.open{opacity:1;pointer-events:all}
+
+    .cal-header{
+      display:flex;align-items:center;gap:8px;margin-bottom:16px;
+    }
+    .cal-nav{
+      border:none;background:#fff0f6;color:#be185d;
+      width:34px;height:34px;border-radius:10px;
+      font-size:18px;font-weight:900;cursor:pointer;
+      display:flex;align-items:center;justify-content:center;
+      flex-shrink:0;transition:background .12s;
+      line-height:1;
+    }
+    .cal-nav:hover{background:#ec4899;color:white}
+    .cal-month-label{
+      flex:1;text-align:center;font-size:15px;
+      font-weight:800;color:#be185d;
+    }
+    .cal-grid{
+      display:grid;
+      grid-template-columns:repeat(7,1fr);
+      gap:2px;
+    }
+    .cal-dow{
+      text-align:center;font-size:10px;font-weight:800;
+      color:#f9a8d4;padding:4px 0 8px;
+      text-transform:uppercase;letter-spacing:.02em;
+    }
+    .cal-day{
+      position:relative;
+      height:36px;border-radius:10px;border:none;
+      background:none;cursor:pointer;
+      font-size:12px;font-weight:600;color:#444;
+      display:flex;align-items:center;justify-content:center;
+      transition:background .12s,color .12s;
+      padding:0;
+    }
+    .cal-day:hover{background:#fff0f6;color:#be185d}
+    .cal-day.today{
+      background:#fff0f6;
+      outline:2px solid #ec4899;outline-offset:-2px;
+      color:#be185d;font-weight:800;
+    }
+    .cal-day.selected{
+      background:#ec4899 !important;
+      color:white !important;
+      font-weight:800;
+    }
+
+    .cal-day.other-month{color:#ccc}
+    .cal-day.other-month:hover{background:#fafafa;color:#bbb}
+    .cal-footer{
+      margin-top:14px;
+      display:flex;align-items:center;justify-content:space-between;
+      border-top:1px solid #ffd1e4;padding-top:12px;
+    }
+    .cal-today-link{
+      border:none;background:#ec4899;color:white;
+      font-size:12px;font-weight:700;cursor:pointer;
+      padding:7px 16px;border-radius:10px;
+    }
+    .cal-today-link:hover{background:#be185d}
+    .cal-close-btn{
+      border:none;background:#fff0f6;color:#be185d;
+      font-size:12px;font-weight:700;cursor:pointer;
+      padding:7px 16px;border-radius:10px;
+    }
+    .cal-close-btn:hover{background:#ffd1e4}
+  </style>
+</head>
+<body>
+
+<!-- Hamburger -->
+<button class="hamburger" id="hamburgerBtn" onclick="toggleSidebar()">
+  <span></span><span></span><span></span>
+</button>
+
+<!-- Topbar -->
+<div class="topbar">
+  <span class="topbar-date" id="topbarDate"></span>
+  <span class="topbar-day" id="topbarDay"></span>
+  <button class="topbar-save" onclick="saveDay()">💾 Simpan</button>
+</div>
+
+<!-- Sidebar Overlay -->
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+<!-- Sidebar -->
+<nav class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <h2>🌸 Creator Daily</h2>
+    <p>Dashboard Harian Kreator</p>
+  </div>
+  <div class="sidebar-nav">
+    <div class="nav-label">Navigasi</div>
+    <button class="nav-item" onclick="goSection('sec-content')">
+      <span class="nav-icon">📝</span><span class="nav-text">Content Plan Hari Ini</span>
+    </button>
+    <button class="nav-item" onclick="goSection('sec-checklist')">
+      <span class="nav-icon">✅</span><span class="nav-text">Checklist Harian</span>
+    </button>
+    <button class="nav-item" onclick="goSection('sec-notes')">
+      <span class="nav-icon">💬</span><span class="nav-text">Catatan & Ide</span>
+    </button>
+    <button class="nav-item" onclick="goSection('sec-mood')">
+      <span class="nav-icon">😊</span><span class="nav-text">Mood Hari Ini</span>
+    </button>
+    <button class="nav-item" onclick="goSection('sec-goals')">
+      <span class="nav-icon">🎯</span><span class="nav-text">Goals Bulan Ini</span>
+    </button>
+    <button class="nav-item" onclick="goSection('sec-links')">
+      <span class="nav-icon">🔗</span><span class="nav-text">Link Konten</span>
+    </button>
+
+    <div class="nav-label" style="margin-top:8px">Aksi</div>
+    <button class="nav-item" onclick="saveDay();closeSidebar()">
+      <span class="nav-icon">💾</span><span class="nav-text">Simpan Hari Ini</span>
+    </button>
+    <button class="nav-item" onclick="copyToday();closeSidebar()">
+      <span class="nav-icon">📋</span><span class="nav-text">Copy Ringkasan Hari Ini</span>
+    </button>
+    <button class="nav-item danger" onclick="resetDay();closeSidebar()">
+      <span class="nav-icon">🗑️</span><span class="nav-text">Kosongkan Hari Ini</span>
+    </button>
+
+    <div class="nav-label" style="margin-top:8px">Data</div>
+    <button class="nav-item" onclick="openIOModal();closeSidebar()">
+      <span class="nav-icon">📦</span><span class="nav-text">Import / Ekspor Data</span>
+    </button>
+  </div>
+  <div class="sidebar-footer">Creator Daily Dashboard v1</div>
+</nav>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- Date Navigator -->
+  <div class="date-nav">
+    <button class="nav-arrow" onclick="changeDate(-1)" title="Hari sebelumnya">&#8249;</button>
+    <div class="cal-wrapper">
+      <button class="cal-trigger" id="calTrigger" onclick="toggleCal()">
+        <div class="ct-left">
+          <span class="ct-icon">📅</span>
+          <div>
+            <div class="ct-date" id="ctDate">—</div>
+            <div class="ct-day" id="ctDay">—</div>
+          </div>
+        </div>
+        <span class="ct-arrow">▼</span>
+      </button>
+    </div>
+    <button class="nav-arrow" onclick="changeDate(1)" title="Hari berikutnya">&#8250;</button>
+  </div>
+  <div style="display:flex;justify-content:center;margin-bottom:14px">
+    <button onclick="goToday()" style="background:#ec4899;color:white;border:none;border-radius:12px;padding:8px 24px;font-size:13px;font-weight:700;cursor:pointer;box-shadow:0 3px 10px rgba(236,72,153,.3)">📍 Hari Ini</button>
+  </div>
+
+  <!-- Calendar Overlay + Popup -->
+  <div class="cal-overlay" id="calOverlay" onclick="closeCal()"></div>
+  <div class="mini-cal" id="miniCal">
+    <div class="cal-header">
+      <button class="cal-nav" onclick="calNavMonth(-1)">&#8249;</button>
+      <div class="cal-month-label" id="calMonthLabel"></div>
+      <button class="cal-nav" onclick="calNavMonth(1)">&#8250;</button>
+    </div>
+    <div class="cal-grid" id="calGrid"></div>
+    <div class="cal-footer">
+      <button class="cal-close-btn" onclick="closeCal()">Tutup</button>
+      <button class="cal-today-link" onclick="goToday();closeCal()">● Hari Ini</button>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-row" id="statsRow">
+    <div class="stat-card">
+      <div class="stat-num" id="statCheck">0/0</div>
+      <div class="stat-label">Checklist</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num" id="statContent">—</div>
+      <div class="stat-label">Platform</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num" id="statMood">—</div>
+      <div class="stat-label">Mood</div>
+    </div>
+  </div>
+
+  <!-- Content Plan -->
+  <section id="sec-content">
+    <div class="card">
+      <div class="card-title">
+        📝 Content Plan Hari Ini
+        <span class="content-count-badge" id="contentCountBadge">0/10</span>
+      </div>
+      <div class="content-cards" id="contentCards"></div>
+      <button class="add-content-btn" id="addContentBtn" onclick="addContentCard()">+ Tambah Konten</button>
+      <button class="copy-btn" style="margin-top:10px" onclick="copyToday()">📋 Copy Ringkasan Hari Ini</button>
+    </div>
+  </section>
+
+  <!-- Checklist -->
+  <section id="sec-checklist">
+    <div class="card">
+      <div class="card-title">✅ Checklist Harian</div>
+      <div id="checklistWrap"></div>
+      <button class="add-check-btn" onclick="addCheck()">+ Tambah Item</button>
+    </div>
+  </section>
+
+  <!-- Notes & Ideas -->
+  <section id="sec-notes">
+    <div class="card">
+      <div class="card-title">💬 Catatan & Ide Hari Ini</div>
+      <textarea class="notes-area" id="dailyNotes" placeholder="Tulis ide, refleksi, hal yang mau dikerjakan, atau apapun..."></textarea>
+    </div>
+  </section>
+
+  <!-- Mood -->
+  <section id="sec-mood">
+    <div class="card">
+      <div class="card-title">😊 Mood Hari Ini</div>
+      <div class="mood-row" id="moodRow">
+        <button class="mood-btn" data-mood="🤩" onclick="selectMood(this)">🤩</button>
+        <button class="mood-btn" data-mood="😊" onclick="selectMood(this)">😊</button>
+        <button class="mood-btn" data-mood="😐" onclick="selectMood(this)">😐</button>
+        <button class="mood-btn" data-mood="😔" onclick="selectMood(this)">😔</button>
+        <button class="mood-btn" data-mood="😤" onclick="selectMood(this)">😤</button>
+        <button class="mood-btn" data-mood="😴" onclick="selectMood(this)">😴</button>
+        <button class="mood-btn" data-mood="🔥" onclick="selectMood(this)">🔥</button>
+        <button class="mood-btn" data-mood="💪" onclick="selectMood(this)">💪</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Monthly Goals (editable) -->
+  <section id="sec-goals">
+    <div class="card">
+      <div class="card-title">🎯 Goals Bulan Ini</div>
+      <textarea class="goals-textarea" id="monthlyGoal" placeholder="Contoh: Upload 300 desain Canva, buat 20 konten Threads..."></textarea>
+    </div>
+  </section>
+
+  <!-- Link Konten -->
+  <section id="sec-links">
+    <div class="card">
+      <div class="card-title">🔗 Link Konten</div>
+      <div class="link-add-row">
+        <input id="linkLabel" placeholder="Label (cth: Post IG Juni...)">
+        <input id="linkUrl" placeholder="https://..." type="url">
+        <select id="linkPlat">
+          <option value="">Platform</option>
+        </select>
+        <button class="link-add-btn" onclick="addLink()">+ Tambah</button>
+      </div>
+      <div class="link-list" id="linkList">
+        <div class="link-empty">Belum ada link. Tambahkan link konten kamu di atas.</div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const PLATFORMS=[
+  {name:"Threads",   icon:"🧵"},
+  {name:"Instagram", icon:"📸"},
+  {name:"TikTok",    icon:"🎵"},
+  {name:"Lemon8",    icon:"🍋"},
+  {name:"Facebook",  icon:"👤"},
+  {name:"Pinterest", icon:"📌"},
+  {name:"Lainnya",   icon:"➕"},
+];
+const STATUSES=["Ide","Draft","Dijadwalkan","Diposting","Selesai"];
+const DAYS=["Minggu","Senin","Selasa","Rabu","Kamis","Jumat","Sabtu"];
+const MONTHS=["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
+
+
+
+let currentDate="";
+let selectedMood="";
+let allData=JSON.parse(localStorage.getItem("creatorDailyV1")||"{}");
+
+function dateToStr(d){
+  const y=d.getFullYear();
+  const m=String(d.getMonth()+1).padStart(2,"0");
+  const day=String(d.getDate()).padStart(2,"0");
+  return y+"-"+m+"-"+day;
+}
+
+function todayStr(){
+  return dateToStr(new Date());
+}
+
+function loadDay(){
+  const d=new Date(currentDate+"T00:00:00");
+  document.getElementById("topbarDate").textContent=`${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+  document.getElementById("topbarDay").textContent=DAYS[d.getDay()];
+  document.getElementById("ctDate").textContent=`${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+  document.getElementById("ctDay").textContent=DAYS[d.getDay()];
+
+  const rec=allData[currentDate]||{};
+
+  // Load multi content cards
+  const contentPlans=rec.contentPlans||[];
+  renderContentCards(contentPlans);
+  document.getElementById("dailyNotes").value=rec.notes||"";
+  renderLinks(rec.links||[]);
+
+  // Monthly goal from month key
+  const mk=currentDate.slice(0,7);
+  const mData=JSON.parse(localStorage.getItem("creatorMonthGoals")||"{}");
+  document.getElementById("monthlyGoal").value=mData[mk]||"";
+
+  // Checklist
+  const wrap=document.getElementById("checklistWrap");
+  wrap.innerHTML="";
+  const checks=rec.checklist||[];
+  checks.forEach(c=>addCheck(typeof c==="string"?c:c.text, typeof c==="object"?c.done:false));
+
+  // Mood
+  selectedMood=rec.mood||"";
+  document.querySelectorAll(".mood-btn").forEach(b=>{
+    b.classList.toggle("selected",b.dataset.mood===selectedMood);
+  });
+
+  updateStats();
+}
+
+function saveDay(){
+  const existing=allData[currentDate]||{};
+  const contentPlans=collectContentCards();
+  const notes=document.getElementById("dailyNotes").value.trim();
+  const mood=selectedMood;
+  const checklist=[...document.querySelectorAll(".checklist-item")].map(el=>({
+    text:el.querySelector("input[type='text']").value,
+    done:el.querySelector("input[type='checkbox']").checked
+  })).filter(x=>x.text.trim());
+  const links=existing.links||[];
+
+  // Kalau semua kosong, hapus record supaya titik tidak muncul
+  const isEmpty = !contentPlans.length && !notes && !mood && !checklist.length && !links.length;
+  if(isEmpty){
+    delete allData[currentDate];
+  } else {
+    allData[currentDate]={contentPlans, notes, mood, checklist, links};
+  }
+  localStorage.setItem("creatorDailyV1",JSON.stringify(allData));
+
+  // Save monthly goal
+  const mk=currentDate.slice(0,7);
+  const mData=JSON.parse(localStorage.getItem("creatorMonthGoals")||"{}");
+  mData[mk]=document.getElementById("monthlyGoal").value;
+  localStorage.setItem("creatorMonthGoals",JSON.stringify(mData));
+
+  updateStats();
+  renderCalGrid();
+  showToast("Tersimpan ✓");
+}
+
+function resetDay(){
+  if(!confirm("Yakin kosongkan data hari ini?")) return;
+  delete allData[currentDate];
+  localStorage.setItem("creatorDailyV1",JSON.stringify(allData));
+  loadDay();
+  showToast("Hari ini dikosongkan");
+}
+
+function addCheck(text="",done=false){
+  const wrap=document.getElementById("checklistWrap");
+  const div=document.createElement("div");
+  div.className="checklist-item"+(done?" done-item":"");
+  div.innerHTML=`
+    <input type="checkbox" ${done?"checked":""} onchange="this.closest('.checklist-item').classList.toggle('done-item',this.checked);updateStats()">
+    <input type="text" placeholder="Tulis tugas..." value="${esc(text)}">
+    <button class="del-btn" onclick="this.parentElement.remove();updateStats()">×</button>
+  `;
+  wrap.appendChild(div);
+  updateStats();
+}
+
+function selectMood(btn){
+  selectedMood=btn.dataset.mood;
+  document.querySelectorAll(".mood-btn").forEach(b=>b.classList.remove("selected"));
+  btn.classList.add("selected");
+  document.getElementById("statMood").textContent=selectedMood||"—";
+}
+
+function updateStats(){
+  const items=[...document.querySelectorAll(".checklist-item")];
+  const total=items.length;
+  const done=items.filter(el=>el.querySelector("input[type='checkbox']").checked).length;
+  document.getElementById("statCheck").textContent=`${done}/${total}`;
+  const cards=collectContentCards();
+  document.getElementById("statContent").textContent=cards.length?cards.length+" konten":"—";
+  document.getElementById("statMood").textContent=selectedMood||"—";
+}
+
+function changeDate(delta){
+  saveDay();
+  const d=new Date(currentDate+"T00:00:00");
+  d.setDate(d.getDate()+delta);
+  currentDate=dateToStr(d);
+  loadDay();
+  renderCalGrid();
+}
+
+function goToday(){
+  saveDay();
+  currentDate=todayStr();
+  loadDay();
+  renderCalGrid();
+}
+
+function copyToday(){
+  saveDay();
+  const rec=allData[currentDate]||{};
+  const d=new Date(currentDate+"T00:00:00");
+  const checks=(rec.checklist||[]).map(c=>`${c.done?"✅":"⬜"} ${c.text}`).join("\n")||"-";
+  const text=`📅 DAILY CREATOR — ${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()} (${DAYS[d.getDay()]})
+
+📝 Content Plan:
+${(rec.contentPlans||[]).map((c,i)=>`[${i+1}] ${c.title||"(tanpa judul)"}
+   Platform : ${(c.platforms||[]).join(", ")||"-"}
+   Tipe     : ${c.ctype||"-"}
+   Status   : ${c.status||"-"}
+   Caption  : ${c.caption||"-"}
+   GDrive   : ${c.gdrive||"-"}`).join("\n\n")||"-"}
+
+✅ Checklist:
+${checks}
+
+💬 Catatan:
+${rec.notes||"-"}
+
+😊 Mood: ${rec.mood||"-"}
+
+🔗 Links:
+${(rec.links||[]).map(l=>`${l.label?l.label+" — ":""}${l.url}`).join("\n")||"-"}`;
+  navigator.clipboard.writeText(text);
+  showToast("Ringkasan berhasil dicopy 📋");
+}
+
+function goSection(id){
+  closeSidebar();
+  setTimeout(()=>{
+    document.getElementById(id)?.scrollIntoView({behavior:"smooth",block:"start"});
+  },180);
+}
+
+function toggleSidebar(){
+  const s=document.getElementById("sidebar");
+  const o=document.getElementById("sidebarOverlay");
+  const b=document.getElementById("hamburgerBtn");
+  const open=s.classList.toggle("open");
+  o.classList.toggle("visible",open);
+  b.classList.toggle("open",open);
+}
+function closeSidebar(){
+  document.getElementById("sidebar").classList.remove("open");
+  document.getElementById("sidebarOverlay").classList.remove("visible");
+  document.getElementById("hamburgerBtn").classList.remove("open");
+}
+
+function showToast(msg){
+  const t=document.getElementById("toast");
+  t.textContent=msg;t.style.display="block";
+  setTimeout(()=>t.style.display="none",1600);
+}
+
+function esc(s){
+  return String(s).replaceAll("&","&amp;").replaceAll('"',"&quot;").replaceAll("<","&lt;").replaceAll(">","&gt;");
+}
+
+
+
+// ── MULTI CONTENT PLAN ──
+const MAX_CONTENT = 10;
+
+function buildPlatChips(containerId, checked=[]){
+  const grid = document.getElementById(containerId);
+  if(!grid) return;
+  grid.innerHTML="";
+  PLATFORMS.forEach(p=>{
+    const isChecked = checked.includes(p.name);
+    const chip = document.createElement("label");
+    chip.className = "plat-chip" + (isChecked?" checked":"");
+    chip.innerHTML = `
+      <input type="checkbox" value="${p.name}" ${isChecked?"checked":""}>
+      <span class="plat-icon">${p.icon}</span>
+      <span class="plat-name">${p.name}</span>
+      <span class="plat-check">${isChecked?"✓":""}</span>
+    `;
+    chip.querySelector("input").addEventListener("change", function(){
+      chip.classList.toggle("checked", this.checked);
+      chip.querySelector(".plat-check").textContent = this.checked ? "✓" : "";
+      updateStats();
+    });
+    grid.appendChild(chip);
+  });
+}
+
+function addContentCard(data={}, collapsed=false){
+  const cards = document.getElementById("contentCards");
+  const count = cards.children.length;
+  if(count >= MAX_CONTENT){ showToast("Maksimal 10 konten per hari"); return; }
+  const idx = Date.now();
+  const div = document.createElement("div");
+  div.className = "content-card";
+  div.dataset.idx = idx;
+  const titlePreview = data.title || "Konten baru";
+  const statusBadge = data.status ? `<span class="cc-status-badge">${data.status}</span>` : "";
+  div.innerHTML = `
+    <div class="content-card-header" onclick="toggleCard(this)">
+      <span class="cc-num">${count+1}</span>
+      <span class="cc-preview">${esc(titlePreview)}</span>
+      ${statusBadge}
+      <span class="cc-toggle">${collapsed?"▶":"▼"}</span>
+      <button class="cc-del" onclick="event.stopPropagation();delContentCard(this)" title="Hapus">×</button>
+    </div>
+    <div class="content-card-body${collapsed?" collapsed":""}">
+      <div class="cc-row">
+        <input class="cc-title" placeholder="Judul konten..." value="${esc(data.title||"")}"
+          oninput="updateCardPreview(this)">
+        <select class="cc-status">
+          <option value="">— Status —</option>
+          ${STATUSES.map(s=>`<option value="${s}" ${data.status===s?"selected":""}>${s}</option>`).join("")}
+        </select>
+      </div>
+      <div class="cc-full">
+        <input class="cc-type" placeholder="Tipe konten (Reels, Feed, Foto, Artikel...)" value="${esc(data.ctype||"")}">
+      </div>
+      <div style="font-size:12px;font-weight:700;color:#be185d;margin-bottom:4px">📱 Platform</div>
+      <div class="cc-plat-grid" id="platGrid_${idx}"></div>
+      <div class="cc-full">
+        <textarea class="cc-caption" placeholder="Caption / skrip / notes...">${esc(data.caption||"")}</textarea>
+      </div>
+      <div>
+        <div style="font-size:12px;font-weight:700;color:#4285F4;margin-bottom:6px">📂 Google Drive</div>
+        <div class="cc-drive-row">
+          <input class="cc-gdrive" type="url" placeholder="Paste link Google Drive..." value="${esc(data.gdrive||"")}">
+          <a class="cc-drive-btn ${data.gdrive?"":"disabled"}" href="${esc(data.gdrive||"#")}" target="_blank" rel="noopener" id="driveBtn_${idx}">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg>
+            Buka
+          </a>
+        </div>
+      </div>
+    </div>
+  `;
+  cards.appendChild(div);
+  buildPlatChips("platGrid_"+idx, data.platforms||[]);
+
+  // Drive input live update button
+  const driveInput = div.querySelector(".cc-gdrive");
+  const driveBtn = div.querySelector(".cc-drive-btn");
+  driveInput.addEventListener("input", function(){
+    const v = this.value.trim();
+    driveBtn.href = v || "#";
+    driveBtn.classList.toggle("disabled", !v);
+  });
+
+  // Title input update header preview
+  updateContentCountBadge();
+  updateAddBtn();
+}
+
+function toggleCard(header){
+  const body = header.nextElementSibling;
+  const tog = header.querySelector(".cc-toggle");
+  body.classList.toggle("collapsed");
+  tog.textContent = body.classList.contains("collapsed") ? "▶" : "▼";
+}
+
+function updateCardPreview(input){
+  const card = input.closest(".content-card");
+  card.querySelector(".cc-preview").textContent = input.value || "Konten baru";
+}
+
+function delContentCard(btn){
+  if(!confirm("Hapus konten ini?")) return;
+  btn.closest(".content-card").remove();
+  renumberCards();
+  updateContentCountBadge();
+  updateAddBtn();
+  updateStats();
+}
+
+function renumberCards(){
+  document.querySelectorAll(".content-card").forEach((c,i)=>{
+    c.querySelector(".cc-num").textContent = i+1;
+  });
+}
+
+function updateContentCountBadge(){
+  const n = document.getElementById("contentCards").children.length;
+  document.getElementById("contentCountBadge").textContent = n+"/"+MAX_CONTENT;
+}
+
+function updateAddBtn(){
+  const n = document.getElementById("contentCards").children.length;
+  const btn = document.getElementById("addContentBtn");
+  if(btn) btn.style.display = n >= MAX_CONTENT ? "none" : "";
+}
+
+function collectContentCards(){
+  return [...document.querySelectorAll(".content-card")].map(card=>{
+    const idx = card.dataset.idx;
+    return {
+      title: card.querySelector(".cc-title").value,
+      ctype: card.querySelector(".cc-type").value,
+      status: card.querySelector(".cc-status").value,
+      caption: card.querySelector(".cc-caption").value,
+      gdrive: card.querySelector(".cc-gdrive").value,
+      platforms: [...card.querySelectorAll(`#platGrid_${idx} input:checked`)].map(i=>i.value)
+    };
+  }).filter(p =>
+    (p.title||"").trim() || (p.caption||"").trim() ||
+    (p.ctype||"").trim() || (p.gdrive||"").trim() ||
+    (p.platforms||[]).length > 0
+  );
+}
+
+function renderContentCards(plans){
+  const container = document.getElementById("contentCards");
+  container.innerHTML = "";
+  if(plans && plans.length){
+    plans.forEach((p,i)=> addContentCard(p, i>0));
+  }
+  updateContentCountBadge();
+  updateAddBtn();
+}
+
+// ── LINK KONTEN ──
+const PLAT_ICONS={
+  "Threads":"🧵","Instagram":"📸","TikTok":"🎵","Lemon8":"🍋",
+  "Facebook":"👤","Pinterest":"📌","Lainnya":"➕",""  :"🌐"
+};
+
+// Populate link platform select
+const linkPlatSel=document.getElementById("linkPlat");
+["","Threads","Instagram","TikTok","Lemon8","Facebook","Pinterest","Lainnya"].forEach(p=>{
+  const o=document.createElement("option");o.value=p;o.textContent=p||"— Platform —";linkPlatSel.appendChild(o);
+});
+
+function renderLinks(links){
+  const list=document.getElementById("linkList");
+  if(!links||!links.length){
+    list.innerHTML='<div class="link-empty">Belum ada link. Tambahkan link konten kamu di atas.</div>';
+    return;
+  }
+  list.innerHTML="";
+  links.forEach((lk,i)=>{
+    const icon=PLAT_ICONS[lk.plat]||"🌐";
+    const div=document.createElement("div");
+    div.className="link-item";
+    div.innerHTML=`
+      <span class="link-icon">${icon}</span>
+      <div class="link-body">
+        <div class="link-label">${esc(lk.label||lk.url)}</div>
+        <div class="link-url">${esc(lk.url)}</div>
+      </div>
+      <div class="link-actions">
+        <a class="link-open-btn" href="${esc(lk.url)}" target="_blank" rel="noopener">↗ Buka</a>
+        <button class="link-copy-btn" onclick="copyLink(${i})">📋</button>
+        <button class="link-del-btn" onclick="delLink(${i})">×</button>
+      </div>
+    `;
+    list.appendChild(div);
+  });
+}
+
+function addLink(){
+  const label=document.getElementById("linkLabel").value.trim();
+  const url=document.getElementById("linkUrl").value.trim();
+  const plat=document.getElementById("linkPlat").value;
+  if(!url){showToast("Masukkan URL dulu!");return;}
+  const rec=allData[currentDate]||{};
+  if(!rec.links) rec.links=[];
+  rec.links.push({label,url,plat});
+  allData[currentDate]=rec;
+  localStorage.setItem("creatorDailyV1",JSON.stringify(allData));
+  document.getElementById("linkLabel").value="";
+  document.getElementById("linkUrl").value="";
+  document.getElementById("linkPlat").value="";
+  renderLinks(rec.links);
+  showToast("Link disimpan ✓");
+}
+
+function delLink(i){
+  const rec=allData[currentDate]||{};
+  rec.links=rec.links||[];
+  rec.links.splice(i,1);
+  allData[currentDate]=rec;
+  localStorage.setItem("creatorDailyV1",JSON.stringify(allData));
+  renderLinks(rec.links);
+}
+
+function copyLink(i){
+  const rec=allData[currentDate]||{};
+  const lk=(rec.links||[])[i];
+  if(lk) navigator.clipboard.writeText(lk.url);
+  showToast("Link dicopy 📋");
+}
+
+
+// ── IMPORT / EXPORT ──
+let ioScope = "all";
+
+function setScope(s){
+  ioScope = s;
+  ["all","month","day"].forEach(k=>{
+    document.getElementById("scope"+k.charAt(0).toUpperCase()+k.slice(1))
+      .classList.toggle("active", k===s);
+  });
+}
+
+function getScopedData(){
+  const all = JSON.parse(localStorage.getItem("creatorDailyV1")||"{}");
+  if(ioScope === "all") return all;
+  if(ioScope === "month"){
+    const mk = currentDate.slice(0,7);
+    const filtered = {};
+    Object.keys(all).filter(k=>k.startsWith(mk)).forEach(k=>filtered[k]=all[k]);
+    return filtered;
+  }
+  // day
+  const filtered = {};
+  if(all[currentDate]) filtered[currentDate] = all[currentDate];
+  return filtered;
+}
+
+function scopeLabel(){
+  if(ioScope==="all") return "semua";
+  if(ioScope==="month") return currentDate.slice(0,7);
+  return currentDate;
+}
+
+function exportJSON(){
+  saveDay();
+  const data = {
+    exported: new Date().toISOString(),
+    scope: ioScope,
+    dailyData: getScopedData(),
+    monthGoals: JSON.parse(localStorage.getItem("creatorMonthGoals")||"{}")
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type:"application/json"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `creator-daily-${scopeLabel()}.json`;
+  a.click();
+  showToast("JSON berhasil diunduh ✓");
+}
+
+function exportCSV(){
+  saveDay();
+  const data = getScopedData();
+  const rows = [["Tanggal","Hari","Konten ke-","Judul","Platform","Tipe","Status","Caption","GDrive","Mood","Checklist Selesai","Total Checklist","Catatan"]];
+  const sortedDates = Object.keys(data).sort();
+  sortedDates.forEach(date=>{
+    const rec = data[date];
+    const d = new Date(date+"T00:00:00");
+    const hari = DAYS[d.getDay()];
+    const mood = rec.mood||"";
+    const notes = (rec.notes||"").replace(/\n/g," ");
+    const checks = rec.checklist||[];
+    const checkDone = checks.filter(c=>c.done).length;
+    const checkTotal = checks.length;
+    const plans = rec.contentPlans||[];
+    if(plans.length === 0){
+      rows.push([date,hari,"","","","","","","",mood,checkDone,checkTotal,notes]);
+    } else {
+      plans.forEach((p,i)=>{
+        rows.push([
+          date, hari, i+1,
+          p.title||"", (p.platforms||[]).join("|"),
+          p.ctype||"", p.status||"",
+          (p.caption||"").replace(/\n/g," "),
+          p.gdrive||"",
+          i===0?mood:"",
+          i===0?checkDone:"",
+          i===0?checkTotal:"",
+          i===0?notes:""
+        ]);
+      });
+    }
+  });
+  const csv = rows.map(r=>r.map(v=>'"'+String(v||"").replace(/"/g,'""')+'"').join(",")).join("\n");
+  const blob = new Blob(["\uFEFF"+csv], {type:"text/csv;charset=utf-8"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `creator-daily-${scopeLabel()}.csv`;
+  a.click();
+  showToast("CSV berhasil diunduh ✓");
+}
+
+function importJSON(event){
+  const file = event.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e){
+    try{
+      const parsed = JSON.parse(e.target.result);
+      // Support both full export format and raw dailyData object
+      const incoming = parsed.dailyData || parsed;
+      if(typeof incoming !== "object") throw new Error("Format tidak valid");
+      const existing = JSON.parse(localStorage.getItem("creatorDailyV1")||"{}");
+      const merged = Object.assign({}, existing, incoming);
+      localStorage.setItem("creatorDailyV1", JSON.stringify(merged));
+      allData = merged;
+
+      // Import monthGoals if present
+      if(parsed.monthGoals){
+        const existingGoals = JSON.parse(localStorage.getItem("creatorMonthGoals")||"{}");
+        const mergedGoals = Object.assign({}, existingGoals, parsed.monthGoals);
+        localStorage.setItem("creatorMonthGoals", JSON.stringify(mergedGoals));
+      }
+
+      const count = Object.keys(incoming).length;
+      document.getElementById("importNote").textContent = "✅ Berhasil import "+count+" hari data!";
+      loadDay();
+      showToast("Import berhasil! "+count+" hari ✓");
+    } catch(err){
+      document.getElementById("importNote").textContent = "❌ Gagal: "+err.message;
+      showToast("Import gagal — cek format file");
+    }
+    event.target.value="";
+  };
+  reader.readAsText(file);
+}
+
+function openIOModal(){
+  document.getElementById("ioModal").classList.add("show");
+  document.getElementById("importNote").textContent = "Import akan menggabungkan data lama + baru. Data yang sama (tanggal sama) akan ditimpa.";
+}
+
+function closeIOModal(e){
+  if(!e || e.target===document.getElementById("ioModal"))
+    document.getElementById("ioModal").classList.remove("show");
+}
+
+
+// ── MINI CALENDAR ──
+let calViewYear = new Date().getFullYear();
+let calViewMonth = new Date().getMonth();
+
+function toggleCal(){
+  const cal = document.getElementById("miniCal");
+  const overlay = document.getElementById("calOverlay");
+  const trigger = document.getElementById("calTrigger");
+  const isOpen = !cal.classList.contains("open");
+  if(isOpen){
+    const cd = new Date(currentDate+"T00:00:00");
+    calViewYear = cd.getFullYear();
+    calViewMonth = cd.getMonth();
+    renderCalGrid();
+    cal.classList.add("open");
+    overlay.classList.add("open");
+    trigger.classList.add("open");
+  } else {
+    closeCal();
+  }
+}
+
+function closeCal(){
+  document.getElementById("miniCal").classList.remove("open");
+  document.getElementById("calOverlay").classList.remove("open");
+  document.getElementById("calTrigger").classList.remove("open");
+}
+
+function calNavMonth(delta){
+  calViewMonth += delta;
+  if(calViewMonth > 11){ calViewMonth=0; calViewYear++; }
+  if(calViewMonth < 0){ calViewMonth=11; calViewYear--; }
+  renderCalGrid();
+}
+
+function dayHasRealData(ds){
+  const rec = allData[ds];
+  if(!rec) return false;
+  // konten plan: harus ada judul atau caption yang diisi
+  const hasContent = (rec.contentPlans||[]).some(p =>
+    (p.title||"").trim() !== "" || (p.caption||"").trim() !== ""
+  );
+  // checklist: harus ada item dengan teks yang diisi
+  const hasChecklist = (rec.checklist||[]).some(c => (c.text||"").trim() !== "");
+  // catatan
+  const hasNotes = (rec.notes||"").trim() !== "";
+  // mood
+  const hasMood = (rec.mood||"").trim() !== "";
+  // links
+  const hasLinks = (rec.links||[]).length > 0;
+  return hasContent || hasChecklist || hasNotes || hasMood || hasLinks;
+}
+
+function renderCalGrid(){
+  const grid = document.getElementById("calGrid");
+  const label = document.getElementById("calMonthLabel");
+  if(!grid) return;
+  label.textContent = MONTHS[calViewMonth]+" "+calViewYear;
+
+  const dows = ["Min","Sen","Sel","Rab","Kam","Jum","Sab"];
+  let html = dows.map(d=>`<div class="cal-dow">${d}</div>`).join("");
+
+  const firstDay = new Date(calViewYear, calViewMonth, 1).getDay();
+  const daysInMonth = new Date(calViewYear, calViewMonth+1, 0).getDate();
+  const daysInPrev = new Date(calViewYear, calViewMonth, 0).getDate();
+  const today = todayStr();
+
+  // Prev month padding
+  for(let i=0; i<firstDay; i++){
+    const day = daysInPrev - firstDay + 1 + i;
+    const d = new Date(calViewYear, calViewMonth-1, day);
+    const ds = dateToStr(d);
+    html += `<button class="cal-day other-month" onclick="pickDay('${ds}')">${day}</button>`;
+  }
+
+  // Current month days
+  for(let day=1; day<=daysInMonth; day++){
+    const ds = `${calViewYear}-${String(calViewMonth+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
+    const isToday = ds===today;
+    const isSelected = ds===currentDate;
+    let cls = "cal-day";
+    if(isToday) cls+=" today";
+    if(isSelected) cls+=" selected";
+    html += `<button class="${cls}" onclick="pickDay('${ds}')">${day}</button>`;
+  }
+
+  // Next month padding
+  const total = firstDay + daysInMonth;
+  const remaining = total%7===0?0:7-(total%7);
+  for(let day=1; day<=remaining; day++){
+    const d = new Date(calViewYear, calViewMonth+1, day);
+    const ds = dateToStr(d);
+    html += `<button class="cal-day other-month" onclick="pickDay('${ds}')">${day}</button>`;
+  }
+
+  grid.innerHTML = html;
+}
+
+function pickDay(dateStr){
+  saveDay();
+  currentDate = dateStr;
+  loadDay();
+  closeCal();
+}
+
+
+
+// Init — hapus semua record kosong yang tersimpan
+Object.keys(allData).forEach(ds => {
+  if(!dayHasRealData(ds)) delete allData[ds];
+});
+localStorage.setItem("creatorDailyV1", JSON.stringify(allData));
+currentDate=todayStr();
+loadDay();
+setInterval(saveDay,15000);
+
+</script>
+
+<!-- Import/Export Modal -->
+<div class="modal-overlay" id="ioModal" onclick="closeIOModal(event)">
+  <div class="modal">
+    <div class="modal-title">
+      📦 Import / Ekspor Data
+      <button class="modal-close" onclick="closeIOModal()">×</button>
+    </div>
+
+    <div class="io-section">
+      <div class="io-label">📤 Ekspor</div>
+      <div class="io-scope">
+        <button id="scopeAll" class="active" onclick="setScope('all')">Semua Data</button>
+        <button id="scopeMonth" onclick="setScope('month')">Bulan Ini</button>
+        <button id="scopeDay" onclick="setScope('day')">Hari Ini</button>
+      </div>
+      <div class="io-row">
+        <button class="io-btn export-json" onclick="exportJSON()">⬇ JSON</button>
+        <button class="io-btn export-csv" onclick="exportCSV()">⬇ CSV</button>
+      </div>
+      <div class="io-note">JSON = data lengkap (bisa di-import kembali). CSV = ringkasan per hari untuk Excel/Sheets.</div>
+    </div>
+
+    <hr class="io-divider">
+
+    <div class="io-section">
+      <div class="io-label">📥 Import (JSON)</div>
+      <div class="io-row">
+        <button class="io-btn import-btn" onclick="document.getElementById('importFile').click()">
+          ⬆ Pilih File JSON
+        </button>
+      </div>
+      <input type="file" id="importFile" accept=".json" style="display:none" onchange="importJSON(event)">
+      <div class="io-note" id="importNote">Import akan menggabungkan data lama + baru. Data yang sama (tanggal sama) akan ditimpa.</div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
