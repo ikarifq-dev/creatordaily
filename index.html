@@ -1090,6 +1090,7 @@ function addContentCard(data={}, collapsed=false){
           </a>
         </div>
       </div>
+      <button class="cc-copy-btn" onclick="copyContentCard(this)" style="margin-top:10px;width:100%;background:#fff0f6;color:#be185d;border:1.5px solid #ffd1e4;border-radius:12px;padding:9px;font-size:13px;font-weight:700;cursor:pointer;transition:background .15s">📋 Copy Konten Ini</button>
     </div>
   `;
   cards.appendChild(div);
@@ -1490,6 +1491,32 @@ function pickDay(dateStr){
 }
 
 
+
+function copyContentCard(btn){
+  const card = btn.closest(".content-card");
+  const idx = card.dataset.idx;
+  const num = card.querySelector(".cc-num").textContent;
+  const title   = card.querySelector(".cc-title").value || "-";
+  const ctype   = card.querySelector(".cc-type").value || "-";
+  const status  = card.querySelector(".cc-status").value || "-";
+  const caption = card.querySelector(".cc-caption").value || "-";
+  const gdrive  = card.querySelector(".cc-gdrive").value || "-";
+  const platforms = [...card.querySelectorAll(`#platGrid_${idx} input:checked`)].map(i=>i.value);
+
+  const text =
+`📝 Konten #${num} — ${title}
+Platform : ${platforms.join(", ")||"-"}
+Tipe     : ${ctype}
+Status   : ${status}
+Caption  :
+${caption}
+📂 Drive : ${gdrive}`;
+
+  navigator.clipboard.writeText(text);
+  btn.textContent = "✓ Tersalin!";
+  setTimeout(()=>{ btn.textContent = "📋 Copy Konten Ini"; }, 1500);
+  showToast("Konten #"+num+" berhasil dicopy 📋");
+}
 
 function copyNotes(){
   const val = document.getElementById("dailyNotes").value.trim();
