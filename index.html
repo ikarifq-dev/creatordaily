@@ -392,6 +392,25 @@
     }
     .cc-full textarea{resize:vertical;min-height:70px}
     .cc-full input:focus,.cc-full textarea:focus{border-color:#ec4899}
+    /* ── TXT UPLOAD CAPTION ── */
+    .cc-caption-wrap{position:relative;display:flex;flex-direction:column;gap:6px}
+    .cc-caption-toolbar{
+      display:flex;align-items:center;gap:6px;
+    }
+    .cc-upload-txt-btn{
+      display:inline-flex;align-items:center;gap:5px;
+      background:#f5f0ff;color:#7c3aed;
+      border:1.5px solid #ddd6fe;border-radius:9px;
+      padding:5px 11px;font-size:12px;font-weight:700;
+      cursor:pointer;transition:background .15s;white-space:nowrap;
+    }
+    .cc-upload-txt-btn:hover{background:#ede9fe;border-color:#7c3aed}
+    .cc-txt-filename{
+      font-size:11px;color:#7c3aed;
+      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+      max-width:140px;
+    }
+
     .cc-drive-row{
       display:flex;align-items:center;gap:8px;
     }
@@ -1076,9 +1095,17 @@ function addContentCard(data={}, collapsed=false){
         <input class="cc-type" placeholder="Tipe konten (Reels, Feed, Foto, Artikel...)" value="${esc(data.ctype||"")}">
       </div>
       <div style="font-size:12px;font-weight:700;color:#be185d;margin-bottom:4px">📱 Platform</div>
-      <div class="cc-plat-grid" id="platGrid_${idx}"></div>
-      <div class="cc-full">
-        <textarea class="cc-caption" placeholder="Caption / skrip / notes...">${esc(data.caption||"")}</textarea>
+      <div class="cc-plat-grid" id="platGrid_${idx}" data-idx="${idx}" data-platforms="${esc(JSON.stringify(data.platforms||[]))}"></div>
+      <div class="cc-caption-wrap">
+        <div class="cc-caption-toolbar">
+          <span style="font-size:12px;font-weight:700;color:#be185d">📝 Caption / Skrip / Notes</span>
+          <label class="cc-upload-txt-btn" title="Upload file .txt">
+            📄 Upload TXT
+            <input type="file" accept=".txt" style="display:none" onchange="loadTxtToCaption(this)">
+          </label>
+          <span class="cc-txt-filename"></span>
+        </div>
+        <textarea class="cc-caption" placeholder="Tulis atau upload file .txt untuk caption / skrip / notes...">${esc(data.caption||"")}</textarea>
       </div>
       <div>
         <div style="font-size:12px;font-weight:700;color:#4285F4;margin-bottom:6px">📂 Google Drive</div>
@@ -1094,7 +1121,10 @@ function addContentCard(data={}, collapsed=false){
     </div>
   `;
   cards.appendChild(div);
-  buildPlatChips("platGrid_"+idx, data.platforms||[]);
+  // Pastikan DOM sudah siap sebelum build platform chips
+  requestAnimationFrame(()=>{
+    buildPlatChips("platGrid_"+idx, data.platforms||[]);
+  });
 
   // Drive input live update button
   const driveInput = div.querySelector(".cc-gdrive");
@@ -1172,8 +1202,18 @@ function renderContentCards(plans){
   if(plans && plans.length){
     plans.forEach((p,i)=> addContentCard(p, i>0));
   }
-  updateContentCountBadge();
-  updateAddBtn();
+  // Paksa build semua platform chips yang belum ter-render (fallback safety)
+  requestAnimationFrame(()=>{
+    document.querySelectorAll(".cc-plat-grid").forEach(grid=>{
+      if(grid.children.length === 0){
+        let plats = [];
+        try{ plats = JSON.parse(grid.dataset.platforms||"[]"); }catch(e){}
+        buildPlatChips(grid.id, plats);
+      }
+    });
+    updateContentCountBadge();
+    updateAddBtn();
+  });
 }
 
 // ── LINK KONTEN ──
@@ -1516,6 +1556,32 @@ ${caption}
   btn.textContent = "✓ Tersalin!";
   setTimeout(()=>{ btn.textContent = "📋 Copy Konten Ini"; }, 1500);
   showToast("Konten #"+num+" berhasil dicopy 📋");
+}
+
+function loadTxtToCaption(input){
+  const file = input.files[0];
+  if(!file) return;
+  if(!file.name.endsWith(".txt")){
+    showToast("Hanya file .txt yang didukung");
+    input.value="";
+    return;
+  }
+  const wrap = input.closest(".cc-caption-wrap");
+  const textarea = wrap.querySelector(".cc-caption");
+  const filenameEl = wrap.querySelector(".cc-txt-filename");
+  const reader = new FileReader();
+  reader.onload = function(e){
+    textarea.value = e.target.result;
+    filenameEl.textContent = "📄 "+file.name;
+    showToast("File '"+file.name+"' berhasil dimuat ✓");
+    // Reset input supaya file yang sama bisa diupload ulang
+    input.value = "";
+  };
+  reader.onerror = function(){
+    showToast("Gagal membaca file!");
+    input.value = "";
+  };
+  reader.readAsText(file, "UTF-8");
 }
 
 function copyNotes(){
