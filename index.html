@@ -1133,6 +1133,7 @@ function addContentCard(data={}, collapsed=false){
           <span class="cc-txt-filename"></span>
         </div>
         <textarea class="cc-caption" placeholder="Tulis atau upload file .txt untuk caption / skrip / notes...">${esc(data.caption||"")}</textarea>
+        <button class="cc-copy-btn" onclick="copyCaption(this)" style="width:100%;background:#fff0f6;color:#be185d;border:1.5px solid #ffd1e4;border-radius:12px;padding:9px;font-size:13px;font-weight:700;cursor:pointer;transition:background .15s,color .15s" onmouseover="this.style.background='#ec4899';this.style.color='white'" onmouseout="this.style.background='#fff0f6';this.style.color='#be185d'">📋 Copy Caption</button>
       </div>
       <div class="cc-hashtag-wrap">
         <div class="cc-hashtag-label">
@@ -1154,7 +1155,6 @@ function addContentCard(data={}, collapsed=false){
           </a>
         </div>
       </div>
-      <button class="cc-copy-btn" onclick="copyContentCard(this)" style="margin-top:10px;width:100%;background:#fff0f6;color:#be185d;border:1.5px solid #ffd1e4;border-radius:12px;padding:9px;font-size:13px;font-weight:700;cursor:pointer;transition:background .15s">📋 Copy Konten Ini</button>
     </div>
   `;
   cards.appendChild(div);
@@ -1570,30 +1570,15 @@ function pickDay(dateStr){
 
 
 
-function copyContentCard(btn){
-  const card = btn.closest(".content-card");
-  const idx = card.dataset.idx;
-  const num = card.querySelector(".cc-num").textContent;
-  const title   = card.querySelector(".cc-title").value || "-";
-  const ctype   = card.querySelector(".cc-type").value || "-";
-  const status  = card.querySelector(".cc-status").value || "-";
-  const caption = card.querySelector(".cc-caption").value || "-";
-  const gdrive  = card.querySelector(".cc-gdrive").value || "-";
-  const platforms = [...card.querySelectorAll(`#platGrid_${idx} input:checked`)].map(i=>i.value);
-
-  const text =
-`📝 Konten #${num} — ${title}
-Platform : ${platforms.join(", ")||"-"}
-Tipe     : ${ctype}
-Status   : ${status}
-Caption  :
-${caption}
-📂 Drive : ${gdrive}`;
-
-  navigator.clipboard.writeText(text);
-  btn.textContent = "✓ Tersalin!";
-  setTimeout(()=>{ btn.textContent = "📋 Copy Konten Ini"; }, 1500);
-  showToast("Konten #"+num+" berhasil dicopy 📋");
+function copyCaption(btn){
+  const cardBody = btn.closest(".content-card-body");
+  const val = cardBody ? cardBody.querySelector(".cc-caption").value.trim() : "";
+  if(!val){ showToast("Caption masih kosong"); return; }
+  navigator.clipboard.writeText(val);
+  const orig = btn.innerHTML;
+  btn.innerHTML = "✓ Tersalin!";
+  setTimeout(()=>{ btn.innerHTML = orig; }, 1500);
+  showToast("Caption berhasil dicopy 📋");
 }
 
 function loadTxtToCaption(input){
