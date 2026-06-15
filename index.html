@@ -411,6 +411,33 @@
       max-width:140px;
     }
 
+    /* ── HASHTAG BOX ── */
+    .cc-hashtag-wrap{
+      display:flex;flex-direction:column;gap:6px;
+      margin-top:2px;
+    }
+    .cc-hashtag-label{
+      font-size:12px;font-weight:700;color:#be185d;
+      display:flex;align-items:center;gap:6px;
+    }
+    .cc-hashtag-box{
+      width:100%;padding:9px 11px;
+      border:1.5px solid #ffd1e4;border-radius:11px;
+      font-size:13px;outline:none;background:#fff8fb;
+      resize:vertical;min-height:60px;color:#333;
+      font-family:inherit;
+    }
+    .cc-hashtag-box:focus{border-color:#ec4899;background:white}
+    .cc-hashtag-copy-btn{
+      background:#fff0f6;color:#be185d;
+      border:1.5px solid #ffd1e4;border-radius:10px;
+      padding:8px 16px;font-size:12px;font-weight:700;
+      cursor:pointer;width:100%;
+      transition:background .15s,color .15s;
+      display:flex;align-items:center;justify-content:center;gap:6px;
+    }
+    .cc-hashtag-copy-btn:hover{background:#ec4899;color:white;border-color:#ec4899}
+
     .cc-drive-row{
       display:flex;align-items:center;gap:8px;
     }
@@ -1107,6 +1134,16 @@ function addContentCard(data={}, collapsed=false){
         </div>
         <textarea class="cc-caption" placeholder="Tulis atau upload file .txt untuk caption / skrip / notes...">${esc(data.caption||"")}</textarea>
       </div>
+      <div class="cc-hashtag-wrap">
+        <div class="cc-hashtag-label">
+          # Hashtags
+          <span style="font-size:10px;color:#aaa;font-weight:500">(dari TXT atau tulis manual)</span>
+        </div>
+        <textarea class="cc-hashtag" placeholder="#hashtag1 #hashtag2 #hashtag3 ...">${esc(data.hashtags||"")}</textarea>
+        <button class="cc-hashtag-copy-btn" onclick="copyHashtag(this)">
+          # Copy Hashtags
+        </button>
+      </div>
       <div>
         <div style="font-size:12px;font-weight:700;color:#4285F4;margin-bottom:6px">📂 Google Drive</div>
         <div class="cc-drive-row">
@@ -1186,6 +1223,7 @@ function collectContentCards(){
       ctype: card.querySelector(".cc-type").value,
       status: card.querySelector(".cc-status").value,
       caption: card.querySelector(".cc-caption").value,
+      hashtags: card.querySelector(".cc-hashtag") ? card.querySelector(".cc-hashtag").value : "",
       gdrive: card.querySelector(".cc-gdrive").value,
       platforms: [...card.querySelectorAll(`#platGrid_${idx} input:checked`)].map(i=>i.value)
     };
@@ -1569,12 +1607,34 @@ function loadTxtToCaption(input){
   const wrap = input.closest(".cc-caption-wrap");
   const textarea = wrap.querySelector(".cc-caption");
   const filenameEl = wrap.querySelector(".cc-txt-filename");
+  // Cari hashtag box di content-card-body yang sama
+  const cardBody = wrap.closest(".content-card-body");
+  const hashtagBox = cardBody ? cardBody.querySelector(".cc-hashtag") : null;
+
   const reader = new FileReader();
   reader.onload = function(e){
-    textarea.value = e.target.result;
+    const raw = e.target.result;
+
+    // Cek apakah ada format CAPTION: ... HASHTAGS: ...
+    const captionMatch = raw.match(/CAPTION:\s*([\s\S]*?)(?=={5,}|HASHTAGS:|$)/i);
+    const hashtagMatch = raw.match(/HASHTAGS:\s*([\s\S]*?)$/i);
+
+    if(captionMatch || hashtagMatch){
+      // Format terstruktur — pisahkan caption & hashtag
+      if(captionMatch){
+        textarea.value = captionMatch[1].replace(/\\n/g,"\n").trim();
+      }
+      if(hashtagMatch && hashtagBox){
+        hashtagBox.value = hashtagMatch[1].replace(/\\n/g,"\n").trim();
+      }
+      showToast("Caption & Hashtags berhasil dipisahkan ✓");
+    } else {
+      // Format biasa — isi semua ke caption
+      textarea.value = raw;
+      showToast("File '"+file.name+"' berhasil dimuat ✓");
+    }
+
     filenameEl.textContent = "📄 "+file.name;
-    showToast("File '"+file.name+"' berhasil dimuat ✓");
-    // Reset input supaya file yang sama bisa diupload ulang
     input.value = "";
   };
   reader.onerror = function(){
@@ -1582,6 +1642,17 @@ function loadTxtToCaption(input){
     input.value = "";
   };
   reader.readAsText(file, "UTF-8");
+}
+
+function copyHashtag(btn){
+  const cardBody = btn.closest(".content-card-body");
+  const val = cardBody ? cardBody.querySelector(".cc-hashtag").value.trim() : "";
+  if(!val){ showToast("Hashtag masih kosong"); return; }
+  navigator.clipboard.writeText(val);
+  const orig = btn.innerHTML;
+  btn.innerHTML = "✓ Tersalin!";
+  setTimeout(()=>{ btn.innerHTML = orig; }, 1500);
+  showToast("Hashtags berhasil dicopy 📋");
 }
 
 function copyNotes(){
