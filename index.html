@@ -196,6 +196,37 @@
     }
     .plat-chip.checked .plat-check{background:#ec4899;color:white}
 
+    /* ── TIPE KONTEN CHIPS ── */
+    .ctype-grid{
+      display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:6px;
+      margin-bottom:10px;
+    }
+    .ctype-chip{
+      display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+      padding:9px 6px;
+      border:1.5px solid #ffd1e4;
+      border-radius:12px;
+      background:#fafafa;
+      cursor:pointer;
+      transition:all .15s;
+      user-select:none;
+      text-align:center;
+    }
+    .ctype-chip:hover{background:#fff0f6;border-color:#f9a8d4}
+    .ctype-chip.checked{background:#ec4899;border-color:#ec4899}
+    .ctype-chip input[type="radio"]{display:none}
+    .ctype-chip .ctype-icon{font-size:17px;line-height:1}
+    .ctype-chip .ctype-name{font-size:11px;font-weight:700;color:#555}
+    .ctype-chip.checked .ctype-name{color:white}
+    .ctype-custom-wrap{display:none;margin-bottom:10px}
+    .ctype-custom-wrap.visible{display:block}
+    .ctype-custom-wrap input{
+      width:100%;padding:9px 11px;
+      border:1.5px solid #ffd1e4;border-radius:11px;
+      font-size:13px;outline:none;background:white;color:#333;
+    }
+    .ctype-custom-wrap input:focus{border-color:#ec4899}
+
     /* ── CHECKLIST ── */
     .checklist-item{
       display:flex;align-items:center;gap:10px;
@@ -634,6 +665,14 @@
 
     .cal-day.other-month{color:#ccc}
     .cal-day.other-month:hover{background:#fafafa;color:#bbb}
+    .cal-day .cal-dot{
+      position:absolute;bottom:4px;left:50%;
+      transform:translateX(-50%);
+      width:5px;height:5px;border-radius:50%;
+      background:#ec4899;
+    }
+    .cal-day.selected .cal-dot{background:white}
+
     .cal-footer{
       margin-top:14px;
       display:flex;align-items:center;justify-content:space-between;
@@ -651,9 +690,59 @@
       padding:7px 16px;border-radius:10px;
     }
     .cal-close-btn:hover{background:#ffd1e4}
+
+    /* ── LICENSE LOCK ── */
+    .lic-overlay{
+      position:fixed;inset:0;z-index:9999;
+      background:linear-gradient(135deg,#fff0f8,#f5f0ff);
+      display:flex;align-items:center;justify-content:center;
+      padding:20px;
+    }
+    .lic-overlay.hidden{display:none}
+    .lic-box{
+      background:white;border-radius:24px;
+      padding:32px 26px;max-width:360px;width:100%;
+      text-align:center;
+      box-shadow:0 20px 60px rgba(190,24,93,.18);
+      border:1.5px solid #ffd1e4;
+    }
+    .lic-icon{font-size:40px;margin-bottom:6px}
+    .lic-box h2{font-size:17px;color:#be185d;margin-bottom:6px}
+    .lic-box p{font-size:13px;color:#888;margin-bottom:18px;line-height:1.5}
+    .lic-input{
+      width:100%;padding:12px 14px;
+      border:1.5px solid #ffd1e4;border-radius:12px;
+      font-size:13px;text-align:center;letter-spacing:.03em;
+      outline:none;color:#333;margin-bottom:10px;
+      font-family:'Courier New',monospace;
+    }
+    .lic-input:focus{border-color:#ec4899}
+    .lic-error{
+      font-size:12px;color:#e11d48;min-height:16px;margin-bottom:10px;font-weight:700;
+    }
+    .lic-btn{
+      width:100%;background:#ec4899;color:white;border:none;
+      border-radius:12px;padding:12px;font-size:14px;font-weight:700;
+      cursor:pointer;transition:background .15s;
+    }
+    .lic-btn:hover{background:#be185d}
+    .lic-hint{font-size:11px;color:#bbb;margin-top:14px;line-height:1.5}
   </style>
 </head>
 <body>
+
+<!-- License Lock Overlay -->
+<div class="lic-overlay" id="licOverlay">
+  <div class="lic-box">
+    <div class="lic-icon">🔒</div>
+    <h2>Creator Daily Dashboard</h2>
+    <p>Masukkan kode lisensi untuk membuka aplikasi ini.</p>
+    <input type="text" id="licInput" class="lic-input" placeholder="Masukkan kode lisensi..." autocomplete="off" spellcheck="false">
+    <div class="lic-error" id="licError"></div>
+    <button class="lic-btn" onclick="checkLicense()">🔓 Buka Aplikasi</button>
+    <div class="lic-hint">Kode lisensi didapat dari pembelian resmi. Hubungi penjual jika belum punya kode.</div>
+  </div>
+</div>
 
 <!-- Hamburger -->
 <button class="hamburger" id="hamburgerBtn" onclick="toggleSidebar()">
@@ -852,6 +941,50 @@
 <div class="toast" id="toast"></div>
 
 <script>
+// ── LICENSE LOCK ──
+// Hash sederhana (djb2) buat verifikasi kode lisensi tanpa nyimpen kode aslinya polos di source.
+function licHash(str){
+  let hash = 5381;
+  for(let i=0;i<str.length;i++){
+    hash = ((hash*33) ^ str.charCodeAt(i)) >>> 0;
+  }
+  return hash.toString(16);
+}
+const LIC_HASH = "cdf4ba18"; // hash dari kode lisensi resmi
+const LIC_STORAGE_KEY = "cdd_license_ok_v1";
+
+function initLicenseGate(){
+  const overlay = document.getElementById("licOverlay");
+  if(localStorage.getItem(LIC_STORAGE_KEY) === LIC_HASH){
+    overlay.classList.add("hidden");
+    return;
+  }
+  overlay.classList.remove("hidden");
+  const input = document.getElementById("licInput");
+  input.addEventListener("keydown", e=>{ if(e.key==="Enter") checkLicense(); });
+  setTimeout(()=>input.focus(), 100);
+}
+
+function checkLicense(){
+  const input = document.getElementById("licInput");
+  const errEl = document.getElementById("licError");
+  const val = input.value.trim();
+  if(!val){
+    errEl.textContent = "Kode lisensi tidak boleh kosong";
+    return;
+  }
+  const h = licHash(val);
+  if(h === LIC_HASH){
+    localStorage.setItem(LIC_STORAGE_KEY, h);
+    document.getElementById("licOverlay").classList.add("hidden");
+    errEl.textContent = "";
+  } else {
+    errEl.textContent = "Kode lisensi salah. Coba lagi.";
+    input.select();
+  }
+}
+initLicenseGate();
+
 const PLATFORMS=[
   {name:"Threads",   icon:"🧵"},
   {name:"Instagram", icon:"📸"},
@@ -1068,6 +1201,72 @@ function esc(s){
 // ── MULTI CONTENT PLAN ──
 const MAX_CONTENT = 10;
 
+// ── TIPE KONTEN ──
+const CTYPES=[
+  {name:"Carousel", icon:"🖼️"},
+  {name:"Reel/Video", icon:"🎥"},
+  {name:"Foto/Feed", icon:"📷"},
+  {name:"Story", icon:"⭐"},
+  {name:"Teks/Artikel", icon:"📝"},
+  {name:"Live", icon:"🔴"},
+  {name:"Lainnya", icon:"➕"}
+].map(c=>c.name);
+
+const CTYPE_ICONS={
+  "Carousel":"🖼️","Reel/Video":"🎥","Foto/Feed":"📷","Story":"⭐",
+  "Teks/Artikel":"📝","Live":"🔴","Lainnya":"➕"
+};
+
+function buildCtypeChips(containerId, value=""){
+  const grid = document.getElementById(containerId);
+  if(!grid) return;
+  const idx = grid.dataset.idx;
+  const card = grid.closest(".content-card");
+  const hiddenInput = card.querySelector(".cc-type");
+  const customWrap = document.getElementById("ctypeCustomWrap_"+idx);
+  const customInput = customWrap.querySelector(".cc-type-custom");
+  const isKnown = CTYPES.includes(value);
+  const isCustom = value && !isKnown;
+
+  grid.innerHTML = "";
+  CTYPES.forEach(name=>{
+    const isChecked = name === value || (isCustom && name === "Lainnya");
+    const chip = document.createElement("label");
+    chip.className = "ctype-chip" + (isChecked ? " checked" : "");
+    chip.innerHTML = `
+      <input type="radio" name="ctypeRadio_${idx}" value="${esc(name)}" ${isChecked?"checked":""}>
+      <span class="ctype-icon">${CTYPE_ICONS[name]}</span>
+      <span class="ctype-name">${name}</span>
+    `;
+    chip.querySelector("input").addEventListener("change", function(){
+      grid.querySelectorAll(".ctype-chip").forEach(c=>c.classList.remove("checked"));
+      chip.classList.add("checked");
+      if(name === "Lainnya"){
+        customWrap.classList.add("visible");
+        hiddenInput.value = customInput.value.trim();
+        customInput.focus();
+      } else {
+        customWrap.classList.remove("visible");
+        hiddenInput.value = name;
+      }
+      const card2 = grid.closest(".content-card");
+      const preview = card2.querySelector(".cc-title").value;
+      updateStats();
+    });
+    grid.appendChild(chip);
+  });
+
+  if(isCustom){
+    customWrap.classList.add("visible");
+    customInput.value = value;
+    hiddenInput.value = value;
+  }
+
+  customInput.oninput = function(){
+    hiddenInput.value = this.value.trim();
+  };
+}
+
 function buildPlatChips(containerId, checked=[]){
   const grid = document.getElementById(containerId);
   if(!grid) return;
@@ -1119,7 +1318,12 @@ function addContentCard(data={}, collapsed=false){
         </select>
       </div>
       <div class="cc-full">
-        <input class="cc-type" placeholder="Tipe konten (Reels, Feed, Foto, Artikel...)" value="${esc(data.ctype||"")}">
+        <div style="font-size:12px;font-weight:700;color:#be185d;margin-bottom:4px">🎬 Tipe Konten</div>
+        <div class="ctype-grid" id="ctypeGrid_${idx}" data-idx="${idx}" data-value="${esc(data.ctype||"")}"></div>
+        <div class="ctype-custom-wrap" id="ctypeCustomWrap_${idx}">
+          <input class="cc-type-custom" type="text" placeholder="Tulis tipe konten sendiri..." value="${esc(CTYPES.includes(data.ctype)?"":(data.ctype||""))}">
+        </div>
+        <input type="hidden" class="cc-type" value="${esc(data.ctype||"")}">
       </div>
       <div style="font-size:12px;font-weight:700;color:#be185d;margin-bottom:4px">📱 Platform</div>
       <div class="cc-plat-grid" id="platGrid_${idx}" data-idx="${idx}" data-platforms="${esc(JSON.stringify(data.platforms||[]))}"></div>
@@ -1158,9 +1362,10 @@ function addContentCard(data={}, collapsed=false){
     </div>
   `;
   cards.appendChild(div);
-  // Pastikan DOM sudah siap sebelum build platform chips
+  // Pastikan DOM sudah siap sebelum build platform & tipe chips
   requestAnimationFrame(()=>{
     buildPlatChips("platGrid_"+idx, data.platforms||[]);
+    buildCtypeChips("ctypeGrid_"+idx, data.ctype||"");
   });
 
   // Drive input live update button
@@ -1247,6 +1452,11 @@ function renderContentCards(plans){
         let plats = [];
         try{ plats = JSON.parse(grid.dataset.platforms||"[]"); }catch(e){}
         buildPlatChips(grid.id, plats);
+      }
+    });
+    document.querySelectorAll(".ctype-grid").forEach(grid=>{
+      if(grid.children.length === 0){
+        buildCtypeChips(grid.id, grid.dataset.value||"");
       }
     });
     updateContentCountBadge();
@@ -1516,6 +1726,18 @@ function dayHasRealData(ds){
   return hasContent || hasChecklist || hasNotes || hasMood || hasLinks;
 }
 
+// Khusus dot kalender: HANYA nyala kalau ada konten (title/caption/tipe/platform terisi)
+function dayHasContent(ds){
+  const rec = allData[ds];
+  if(!rec) return false;
+  return (rec.contentPlans||[]).some(p =>
+    (p.title||"").trim() !== "" ||
+    (p.caption||"").trim() !== "" ||
+    (p.ctype||"").trim() !== "" ||
+    (p.platforms||[]).length > 0
+  );
+}
+
 function renderCalGrid(){
   const grid = document.getElementById("calGrid");
   const label = document.getElementById("calMonthLabel");
@@ -1546,7 +1768,8 @@ function renderCalGrid(){
     let cls = "cal-day";
     if(isToday) cls+=" today";
     if(isSelected) cls+=" selected";
-    html += `<button class="${cls}" onclick="pickDay('${ds}')">${day}</button>`;
+    const dot = dayHasContent(ds) ? `<span class="cal-dot"></span>` : "";
+    html += `<button class="${cls}" onclick="pickDay('${ds}')">${day}${dot}</button>`;
   }
 
   // Next month padding
